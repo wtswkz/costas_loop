@@ -16,5 +16,6 @@ d = repmat(d, round(fs/f_d), 1);
 d = reshape(d, 1, N_d * round(fs/f_d));
 
 theta0 = pi/6;
-x = d * sin(2*pi*f_in*[0:N-1]/fs + theta0);
+x_i = d * cos(2*pi*(f_in - f_lo)*[0:N-1]/fs + theta0);
+x_q = (-d) * sin(2*pi*(f_in - f_lo)*[0:N-1]/fs + theta0);
 
