@@ -1,23 +1,23 @@
-clear
-clc
+% clear
+% clc
 
 fs = 40e6;
-f_in = 10e6;
+f_in = 1e6;
 f_d = 4e3;
 
-f_lo_b = 10e6;
+f_lo_b = 1e6;
 
-N_d = 4000;
+N_d = 8000;
 N = N_d * round(fs / f_d);
 
 d = 2*(randi([0, 1], [1, N_d]) - 0.5);
 d = repmat(d, floor(fs/f_d), 1);
 d = reshape(d, 1, N);
 
-theta0 = pi/12;
+theta0 = pi/6;
 
 kesi = 1/sqrt(2);
-bl = 20;
+bl = 10;
 
 k1 = 2*kesi*(2*bl/(kesi + 1/(4*kesi))); % tau2carr / tau1carr
 k2 = (2*bl/(kesi + 1/(4*kesi)))^2; % 1 / tau1carr
@@ -35,19 +35,33 @@ p = 0;
 s = 0;
 x_i = zeros(1, steps);
 x_q = zeros(1, steps);
+y_i = zeros(1, steps);
+y_q = zeros(1, steps);
 x = zeros(1, steps);
+% Num = [0.00591410465345077	0.0266209893446083	0.0665571396812607	0.115368304997375	0.149758865610464	0.149758865610464	0.115368304997375	0.0665571396812607	0.0266209893446083	0.00591410465345077];
 
 for i = 1:steps
-    x(i) = d((i-1)*Dump_N+1:i*Dump_N) .* sin(2*pi*f_in*[(i-1)*Dump_N+1:i*Dump_N]/fs + theta0);
+    x(i) = d((i-1)*Dump_N+1:i*Dump_N) .* sin(2*pi*f_in*[(i-1)*Dump_N:i*Dump_N-1]/fs + theta0);
     % x = cos(2*pi*f_in*[(i-1)*Dump_N:i*Dump_N-1]/fs + theta0);
-    % x_i = x .* cos(2*pi*f_lo(i)*[(i-1)*Dump_N:i*Dump_N-1]/fs);
-    % x_q = x .* sin(2*pi*f_lo(i)*[(i-1)*Dump_N:i*Dump_N-1]/fs);
+    x_i(i) = x(i) .* sin(2*pi*f_lo(i)*[(i-1)*Dump_N:i*Dump_N-1]/fs);
+    x_q(i) = x(i) .* cos(2*pi*f_lo(i)*[(i-1)*Dump_N:i*Dump_N-1]/fs);
 
-    x_i(i) = d((i-1)*Dump_N+1:i*Dump_N) .* cos(2*pi*(f_in - f_lo(i))*[(i-1)*Dump_N+1:i*Dump_N]/fs + theta0);
-    x_q(i) = d((i-1)*Dump_N+1:i*Dump_N) .* sin(2*pi*(f_in - f_lo(i))*[(i-1)*Dump_N+1:i*Dump_N]/fs + theta0);
+    % x_i(i) = d((i-1)*Dump_N+1:i*Dump_N) .* cos(2*pi*(f_in - f_lo(i))*[(i-1)*Dump_N+1:i*Dump_N]/fs + theta0);
+    % x_q(i) = d((i-1)*Dump_N+1:i*Dump_N) .* sin(2*pi*(f_in - f_lo(i))*[(i-1)*Dump_N+1:i*Dump_N]/fs + theta0);
+
+    if i < length(Num)
+        y_i(i) = Num*[zeros(1, length(Num)-i), x_i(1:i)]' / sum(Num);
+        y_q(i) = Num*[zeros(1, length(Num)-i), x_q(1:i)]' / sum(Num);
+    else
+        y_i(i) = Num*x_i(i-length(Num) + 1:i)' / sum(Num);
+        y_q(i) = Num*x_q(i-length(Num) + 1:i)' / sum(Num);
+    end
     
-    x_i_dump = sum(x_i(i)) / Dump_N;
-    x_q_dump = sum(x_q(i)) / Dump_N;
+    x_i_dump = sum(y_i(i)) / Dump_N;
+    x_q_dump = sum(y_q(i)) / Dump_N;
+
+    % x_i_dump = sum(x_i(i)) / Dump_N;
+    % x_q_dump = sum(x_q(i)) / Dump_N;
 
     % x_i = x(1:2:Dump_N);
     % x_q = x(2:2:Dump_N);
@@ -56,11 +70,13 @@ for i = 1:steps
     % x_q_dump = sum(imag(x_c)) / Dump_N * 2;
 
     % phase_d(i) = sign(x_q_dump)*x_i_dump - sign(x_i_dump)*x_q_dump;
-    phase_d(i) = x_i_dump * x_q_dump;
+    phase_d(i) = sign(x_i_dump)*x_q_dump;
+    % phase_d(i) = x_i_dump * x_q_dump * 4;
     p = phase_d(i) * k1;
     s = phase_d(i) * Tu * k2 + s;
     f_lo_lf(i) = p + s;
-    f_lo(i+1) = f_lo_b + f_lo_lf(i); 
+    f_lo(i+1) = f_lo_b + f_lo_lf(i);
+    % f_lo(i+1) = f_lo_b;
 
 end
 
