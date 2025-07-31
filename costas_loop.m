@@ -23,7 +23,7 @@ bl = 20;
 k1 = 2*kesi*(2*bl/(kesi + 1/(4*kesi)));
 k2 = (2*bl/(kesi + 1/(4*kesi)))^2;
 
-Tu = 1e-3;
+Tu = 1e-6;
 % Tu = 1 / fs;
 Dump_N = floor(fs * Tu);
 
